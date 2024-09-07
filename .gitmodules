@@ -1,0 +1,3 @@
+[submodule "freeRTOS_kernel"]
+	path = freeRTOS_kernel
+	url = git@github.com:franout/FreeRTOS-Kernel.git
