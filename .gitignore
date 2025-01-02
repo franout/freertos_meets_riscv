@@ -4,3 +4,6 @@ cmake_install.cmake
 *.elf
 FreeRTOS-Kernel/
 CMakeFiles/
+
+
+*.map
