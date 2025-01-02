@@ -40,7 +40,7 @@ SECTIONS
      * initializes the stack pointers for each hart at the right offset from
      * the _sp symbol.
      */
-    __stack_size = DEFINED(__stack_size) ? __stack_size : 0x20000;
+    __stack_size = DEFINED(__stack_size) ? __stack_size : 0xA00;
 
     PROVIDE(__stack_size = __stack_size);
 
@@ -92,6 +92,8 @@ SECTIONS
         KEEP (*(.text.init.*))
         KEEP (*(SORT_NONE(.init)))
         KEEP (*(.text.libgloss.start))
+        KEEP (*(.text.*))
+        KEEP (*(.text.freertos_risc_v_trap_handler))
     } >romram :romram
 
     .fini : {
@@ -208,18 +210,7 @@ SECTIONS
     PROVIDE( segment_data_target_start = ADDR(.data) );
     PROVIDE( segment_data_target_end = ADDR(.tdata) + SIZEOF(.tdata) );
 
-    .tbss : ALIGN(8) {
-	*(.tbss .tbss.* .gnu.linkonce.tb.*)
-	*(.tcommon .tcommon.*)
-	PROVIDE( __tls_end = . );
-    } >romram AT>romram :romram
-    PROVIDE( __tbss_size = SIZEOF(.tbss) );
-    PROVIDE( __tls_size = __tls_end - __tls_base );
-
-    .tbss_space : ALIGN(8) {
-	. = . + __tbss_size;
-    } >romram :romram
-
+    
     .bss (NOLOAD): ALIGN(8) {
         PROVIDE( __bss_start = .);
         *(.sbss*)
@@ -231,9 +222,9 @@ SECTIONS
         PROVIDE( _end = . );
     } >romram :romram
 
-    PROVIDE( segment_tbss_source_start = LOADADDR(.tbss) );
-    PROVIDE( segment_tbss_target_start = ADDR(.tbss) );
-    PROVIDE( segment_tbss_target_end = ADDR(.bss) + SIZEOF(.bss) );
+    PROVIDE( segment_bss_source_start = LOADADDR(.bss) );
+    PROVIDE( segment_bss_target_start = ADDR(.bss) );
+    PROVIDE( segment_bss_target_end = ADDR(.bss) + SIZEOF(.bss) );
  
     .stack (NOLOAD) : ALIGN(16) {
         

@@ -53,7 +53,7 @@
  * settings.  Your application will certainly need a different value so set this
  * correctly. This is very often, but not always, equal to the main system clock
  * frequency. */
-#define configCPU_CLOCK_HZ    ( ( unsigned long ) 20000000 )
+#define configCPU_CLOCK_HZ    ( ( unsigned long ) 10000000 )
 
 /* configSYSTICK_CLOCK_HZ is an optional parameter for ARM Cortex-M ports only.
  *
@@ -77,12 +77,12 @@
 
 /* configTICK_RATE_HZ sets frequency of the tick interrupt in Hz, normally
  * calculated from the configCPU_CLOCK_HZ value. */
-#define configTICK_RATE_HZ                         100
+#define configTICK_RATE_HZ                         1000
 
 /* Set configUSE_PREEMPTION to 1 to use pre-emptive scheduling.  Set
  * configUSE_PREEMPTION to 0 to use co-operative scheduling.
  * See https://www.freertos.org/single-core-amp-smp-rtos-scheduling.html. */
-#define configUSE_PREEMPTION                       1
+#define configUSE_PREEMPTION                       0
 
 /* Set configUSE_TIME_SLICING to 1 to have the scheduler switch between Ready
  * state tasks of equal priority on every tick interrupt.  Set
@@ -109,7 +109,7 @@
 /* configMAX_PRIORITIES Sets the number of available task priorities.  Tasks can
  * be assigned priorities of 0 to (configMAX_PRIORITIES - 1).  Zero is the
  * lowest priority. */
-#define configMAX_PRIORITIES                       5
+#define configMAX_PRIORITIES                       16
 
 /* configMINIMAL_STACK_SIZE defines the size of the stack used by the Idle task
  * (in words, not in bytes!).  The kernel does not use this constant for any
@@ -338,7 +338,7 @@
  * the build.  The application writer is responsible for providing the hook
  * function for any set to 1.  See https://www.freertos.org/a00016.html. */
 #define configUSE_IDLE_HOOK                   1
-#define configUSE_TICK_HOOK                   0
+#define configUSE_TICK_HOOK                   1
 #define configUSE_MALLOC_FAILED_HOOK          0
 #define configUSE_DAEMON_TASK_STARTUP_HOOK    0
 
@@ -605,28 +605,8 @@
  * ports. */
 #define configENABLE_MVE                  0
 
-/******************************************************************************/
-/* ARMv7-M and ARMv8-M port Specific Configuration definitions. ***************/
-/******************************************************************************/
 
-/* Set configCHECK_HANDLER_INSTALLATION to 1 to enable additional asserts to
- * verify that the application has correctly installed FreeRTOS interrupt
- * handlers.
- *
- * An application can install FreeRTOS interrupt handlers in one of the
- * following ways:
- *   1. Direct Routing  -  Install the functions vPortSVCHandler and
- * xPortPendSVHandler for SVC call and PendSV interrupts respectively.
- *   2. Indirect Routing - Install separate handlers for SVC call and PendSV
- *                         interrupts and route program control from those
- * handlers to vPortSVCHandler and xPortPendSVHandler functions. The
- * applications that use Indirect Routing must set
- * configCHECK_HANDLER_INSTALLATION to 0.
- *
- * Defaults to 1 if left undefined. */
-#define configCHECK_HANDLER_INSTALLATION    0
-
-#define configISR_STACK_SIZE_WORDS          0
+#define configISR_STACK_SIZE_WORDS          4096
 
 /******************************************************************************/
 /* Definitions that include or exclude functionality. *************************/

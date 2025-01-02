@@ -44,6 +44,44 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
+#ifdef __COMET_SIMULATOR__
+#include <stdlib.h>
+
+/* currently, Comet breaks on ecall*/
+#define END() 		do { asm volatile ("ecall"); }while(0)
+#endif /*__COMET_SIMULATOR__*/
+
+
+/*
+*********************************************************************************************************
+*                                           LOCAL DEFINES
+*********************************************************************************************************
+*/
+#define PRINT_END()                                                                                                    \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		for (int i = 0; i < 10; i++)                                                                                   \
+		{                                                                                                              \
+			asm volatile("li x6,0xc1a0");                                                                              \
+			asm volatile("li x7,0xE41d");                                                                              \
+			asm volatile("li x8,0xc1a0");                                                                              \
+			asm volatile("li x9,0xE41d");                                                                              \
+			asm volatile("li x10,0xc1a0");                                                                             \
+			asm volatile("li x11,0xE41d");                                                                             \
+			asm volatile("li x12,0xc1a0");                                                                             \
+			asm volatile("li x13,0xE41d");                                                                             \
+			asm volatile("li x14,0xc1a0");                                                                             \
+			asm volatile("li x15,0xE41d");                                                                             \
+			asm volatile("li x16,0xc1a0");                                                                             \
+			asm volatile("li x17,0xE41d");                                                                             \
+			asm volatile("li x18,0xc1a0");                                                                             \
+			asm volatile("li x19,0xE41d");                                                                             \
+			asm volatile("li x20,0xc1a0");                                                                             \
+			asm volatile("li x21,0xE41d");                                                                             \
+		}                                                                                                              \
+	} while (0)
+
 /*-----------------------------------------------------------*/
 
 static void exampleTask(void *parameters) __attribute__((noreturn));
@@ -55,11 +93,12 @@ static void exampleTask(void *parameters)
 {
     /* Unused parameters. */
     (void)parameters;
-
+    int my_dummy_counter = 0;
     for (;;)
     {
         /* Example Task Code */
-        vTaskDelay(100); /* delay 100 ticks */
+        my_dummy_counter=(my_dummy_counter++)*2;
+        vTaskDelay(15); /* delay 15 ticks */
     }
 }
 
@@ -73,34 +112,58 @@ static void exampleTask2(void *parameters)
     for (;;)
     {
         c=a*b;
-        /* Example Task Code */
         a++;
         b++;
-        vTaskDelay(100); /* delay 100 ticks */
+        vTaskDelay(10); /* delay 10 ticks */
     }
 }
 /*-----------------------------------------------------------*/
 
+volatile unsigned int period = 0 ;
+volatile unsigned int counter = 0;
 /*it cointans the stop conditions*/
 void vApplicationIdleHook(void)
 {
-    #ifdef __COMET_SIMULATOR__
-    static int stop_condition = 0;
-
-    stop_condition++;
-    /*stop condition for avoiding infinite execution*/
-    if (stop_condition >= 1)
-    {
-      exit(1);
+#ifdef __COMET_SIMULATOR__
+	counter++;
+    if (counter<=1) {
+        if (period >= MAX_HYPERPERIOD_REPS)
+	    {	
+		
+		PRINT_END();
+		END();
+	    }
     }
-    #endif /*__COMET_SIMULATOR__*/
+	/*the clean up counter must be cleaned when the tick is incremented*/
+#endif /*__COMET_SIMULATOR__*/
 }
+
+void vApplicationTickHook( void ){
+    /* clean up the counter for the hyperperiod counter in the idle task */
+    if (counter > 1 ) {
+        counter = 0 ;
+    }
+}
+
+extern void freertos_risc_v_trap_handler(void);
 
 __attribute__((optimize("O0"))) int main(void)
 {
     static StaticTask_t exampleTaskTCB;
     static StackType_t exampleTaskStack[configMINIMAL_STACK_SIZE];
 
+    /**************************************************************
+    *****************                              *****************
+    *****************           INT settings       *****************
+    *****************                              *****************
+    ***************************************************************/
+    // Global interrupt disable
+    csr_clr_bits_mstatus(MSTATUS_MIE_BIT_MASK);
+    csr_write_mie(0);
+    
+    // Setup the IRQ handler entry point, set the software mode 
+    csr_write_mtvec((uint_xlen_t) freertos_risc_v_trap_handler );
+    
     (void)xTaskCreateStatic(exampleTask,
                             "example",
                             configMINIMAL_STACK_SIZE,
@@ -111,10 +174,10 @@ __attribute__((optimize("O0"))) int main(void)
 
 
     (void)xTaskCreateStatic(exampleTask2,
-                            "example",
+                            "example2",
                             configMINIMAL_STACK_SIZE,
                             NULL,
-                            configMAX_PRIORITIES - 1U,
+                            configMAX_PRIORITIES - 3U,
                             &(exampleTaskStack[0]),
                             &(exampleTaskTCB));
     /* Start the scheduler. */

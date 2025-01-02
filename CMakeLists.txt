@@ -1,13 +1,22 @@
 cmake_minimum_required(VERSION 3.15)
 
+set(LINKER_SCRIPT "./RISCV-platform/linker.ld")
 
 set(CMAKE_C_FLAGS "$ENV{OPTIMIZATION_FLAGS} -static -march=rv32i_zicsr  -mabi=ilp32 -mcmodel=medlow -nostartfiles   ")
-set(CMAKE_CXX_FLAGS " $ENV{OPTIMIZATION_FLAGS} -static -march=rv32i_zicsr  -mabi=ilp32 -mcmodel=medlow -nostartfiles ")
-set(CMAKE_EXE_LINKER_FLAGS "$ENV{OPTIMIZATION_FLAGS} -T ./platform/linker.ld -static -march=rv32i_zicsr  -mabi=ilp32 -mcmodel=medlow -nostartfiles")
-set(ASM_OPTIONS "-x assembler-with-cpp ")
-set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS} ${ASM_OPTIONS}" )
+set(CMAKE_CXX_FLAGS " $ENV{OPTIMIZATION_FLAGS} -static -march=rv32i_zicsr  -mabi=ilp32 -mcmodel=medlow -nostartfiles  ")
+set(CMAKE_EXE_LINKER_FLAGS "$ENV{OPTIMIZATION_FLAGS} -Wl,-Map=./$ENV{program}.map,--cref,--no-warn-mismatch -T ${LINKER_SCRIPT} -Xlinker -static -Wl,--entry=_start  -march=rv32i_zicsr  -mabi=ilp32 -mcmodel=medlow -nostartfiles")
 
-project($ENV{program}.elf
+set_target_properties(${PROJECT_NAME} PROPERTIES
+LINK_FLAGS "--defsym=__stack_size=0xA00"
+)
+
+set(LINK_FLAGS ${LINK_FLAGS} "--defsym=__stack_size=0xA00 -T ${LINKER_SCRIPT} -Xlinker -static -Wl,--entry=_start  -march=rv32i_zicsr  -mabi=ilp32 -mcmodel=medlow -nostartfiles")
+
+set(ASM_OPTIONS "-x assembler-with-cpp ")
+set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS} ${ASM_OPTIONS} -DportasmHANDLE_INTERRUPT=freertos_risc_v_application_interrupt_handler" )
+
+set_target_properties(${PROJECT_NAME} PROPERTIES LINK_DEPENDS ${LINKER_SCRIPT})
+project("$ENV{program}.elf"
         LANGUAGES C CXX ASM)
 
 set(FREERTOS_KERNEL_PATH "./freeRTOS_kernel/")
@@ -87,8 +96,7 @@ target_compile_options(freertos_kernel PRIVATE
 add_executable(${PROJECT_NAME}
     ./RISCV-platform/riscv-csr.h
     ./RISCV-platform/startup.c
-    ./RISCV-platform/timer.h
-    ./RISCV-platform/timer.c
+    ./RISCV-platform/vector_handlers.c
     main.c
 )
 
