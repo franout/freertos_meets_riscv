@@ -40,7 +40,7 @@ SECTIONS
      * initializes the stack pointers for each hart at the right offset from
      * the _sp symbol.
      */
-    __stack_size = DEFINED(__stack_size) ? __stack_size : 0xA00;
+    __stack_size = DEFINED(__stack_size) ? __stack_size : 12k;
 
     PROVIDE(__stack_size = __stack_size);
 
