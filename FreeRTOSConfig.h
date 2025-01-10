@@ -53,23 +53,7 @@
  * settings.  Your application will certainly need a different value so set this
  * correctly. This is very often, but not always, equal to the main system clock
  * frequency. */
-#define configCPU_CLOCK_HZ    ( ( unsigned long ) 10000000 )
-
-/* configSYSTICK_CLOCK_HZ is an optional parameter for ARM Cortex-M ports only.
- *
- * By default ARM Cortex-M ports generate the RTOS tick interrupt from the
- * Cortex-M SysTick timer. Most Cortex-M MCUs run the SysTick timer at the same
- * frequency as the MCU itself - when that is the case configSYSTICK_CLOCK_HZ is
- * not needed and should be left undefined. If the SysTick timer is clocked at a
- * different frequency to the MCU core then set configCPU_CLOCK_HZ to the MCU
- * clock frequency, as normal, and configSYSTICK_CLOCK_HZ to the SysTick clock
- * frequency.  Not used if left undefined.
- * The default value is undefined (commented out).  If you need this value bring
- * it back and set it to a suitable value. */
-
-/*
- #define configSYSTICK_CLOCK_HZ                  [Platform specific]
- */
+#define configCPU_CLOCK_HZ    ( ( unsigned long ) 1000000 )
 
 /******************************************************************************/
 /* Scheduling behaviour related definitions. **********************************/
@@ -82,7 +66,7 @@
 /* Set configUSE_PREEMPTION to 1 to use pre-emptive scheduling.  Set
  * configUSE_PREEMPTION to 0 to use co-operative scheduling.
  * See https://www.freertos.org/single-core-amp-smp-rtos-scheduling.html. */
-#define configUSE_PREEMPTION                       0
+#define configUSE_PREEMPTION                       1
 
 /* Set configUSE_TIME_SLICING to 1 to have the scheduler switch between Ready
  * state tasks of equal priority on every tick interrupt.  Set
@@ -142,7 +126,7 @@
  * application task if there is an Idle priority (priority 0) application task
  * that can run.  Set to 0 to have the Idle task use all of its timeslice.
  * Default to 1 if left undefined. */
-#define configIDLE_SHOULD_YIELD                    1
+#define configIDLE_SHOULD_YIELD                    0
 
 /* Each task has an array of task notifications.
  * configTASK_NOTIFICATION_ARRAY_ENTRIES sets the number of indexes in the

@@ -82,6 +82,20 @@
 		}                                                                                                              \
 	} while (0)
 
+#define PRINT_CAUSE_ON_REGS(cause)                                                                                     \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		for (int i = 0; i < 10; i++)                                                                                   \
+		{                                                                                                              \
+			asm volatile("li x6,0xc1a0");                                                                              \
+			asm volatile("li x7,0xc1a0");                                                                              \
+			asm volatile("li x8,0xc1a0");                                                                              \
+			asm volatile("mv x9,%0" : : "r"(cause));                                                                   \
+			asm volatile("mv x10,%0" : : "r"(cause));                                                                  \
+			asm volatile("li x11,0xc1a0");                                                                             \
+			asm volatile("li x12,0xc1a0");                                                                             \
+		}                                                                                                              \
+	} while (0)
 /*-----------------------------------------------------------*/
 
 static void exampleTask(void *parameters) __attribute__((noreturn));
@@ -93,28 +107,33 @@ static void exampleTask(void *parameters)
 {
     /* Unused parameters. */
     (void)parameters;
-    int my_dummy_counter = 0;
+    const TickType_t xDelay = 500 / portTICK_PERIOD_MS;
+    volatile int my_dummy_counter = 0;
     for (;;)
     {
         /* Example Task Code */
-        my_dummy_counter=(my_dummy_counter++)*2;
-        vTaskDelay(15); /* delay 15 ticks */
+        my_dummy_counter=(my_dummy_counter++)<<2;
+        vTaskDelay(xDelay); /* block for 500 ms*/
     }
 }
 
 static void exampleTask2(void *parameters)
 {
     /* Unused parameters. */
-    (void)parameters;
-    int a=1;
-    int b=0;
-    int c;
+    
+    const TickType_t xFrequency = 100;
+    TickType_t xLastWakeTime;
+    //const TickType_t xDelay = 4 / portTICK_PERIOD_MS;
+    volatile int a=1;
+    volatile int b=0;
+    volatile int c;
+    xLastWakeTime = xTaskGetTickCount ();
     for (;;)
     {
         c=a*b;
         a++;
         b++;
-        vTaskDelay(10); /* delay 10 ticks */
+        xTaskDelayUntil( &xLastWakeTime, xFrequency );
     }
 }
 /*-----------------------------------------------------------*/
@@ -127,31 +146,38 @@ void vApplicationIdleHook(void)
 #ifdef __COMET_SIMULATOR__
 	counter++;
     if (counter<=1) {
+        period++;
         if (period >= MAX_HYPERPERIOD_REPS)
 	    {	
-		
 		PRINT_END();
-		END();
+        END();
 	    }
     }
 	/*the clean up counter must be cleaned when the tick is incremented*/
 #endif /*__COMET_SIMULATOR__*/
+    
 }
 
 void vApplicationTickHook( void ){
     /* clean up the counter for the hyperperiod counter in the idle task */
-    if (counter > 1 ) {
+    if (counter >= 1 ) {
         counter = 0 ;
     }
+    
 }
 
 extern void freertos_risc_v_trap_handler(void);
 
+static StaticTask_t exampleTaskTCB;
+static StackType_t exampleTaskStack[configMINIMAL_STACK_SIZE*2];
+
+static StaticTask_t exampleTaskTCB2;
+static StackType_t exampleTaskStack2[configMINIMAL_STACK_SIZE*2];
+
 __attribute__((optimize("O0"))) int main(void)
 {
-    static StaticTask_t exampleTaskTCB;
-    static StackType_t exampleTaskStack[configMINIMAL_STACK_SIZE];
-
+    BaseType_t xReturned = pdPASS;
+    TaskHandle_t xHandle = NULL;
     /**************************************************************
     *****************                              *****************
     *****************           INT settings       *****************
@@ -159,27 +185,36 @@ __attribute__((optimize("O0"))) int main(void)
     ***************************************************************/
     // Global interrupt disable
     csr_clr_bits_mstatus(MSTATUS_MIE_BIT_MASK);
-    csr_write_mie(0);
+    portDISABLE_INTERRUPTS();
     
     // Setup the IRQ handler entry point, set the software mode 
     csr_write_mtvec((uint_xlen_t) freertos_risc_v_trap_handler );
     
-    (void)xTaskCreateStatic(exampleTask,
+    /* dynamic task*/
+    xReturned = xTaskCreate(exampleTask,
                             "example",
                             configMINIMAL_STACK_SIZE,
                             NULL,
-                            configMAX_PRIORITIES - 1U,
-                            &(exampleTaskStack[0]),
-                            &(exampleTaskTCB));
+                            configMAX_PRIORITIES - 2U,
+                            xHandle);
 
-
-    (void)xTaskCreateStatic(exampleTask2,
+    if (xReturned != pdPASS ){
+        PRINT_END();
+        END();
+    }
+    /* static task*/
+    xHandle = xTaskCreateStatic(exampleTask2,
                             "example2",
                             configMINIMAL_STACK_SIZE,
                             NULL,
-                            configMAX_PRIORITIES - 3U,
-                            &(exampleTaskStack[0]),
-                            &(exampleTaskTCB));
+                            //configMAX_PRIORITIES - 3U,
+                            2,
+                            exampleTaskStack2,
+                            &(exampleTaskTCB2));
+    if (xHandle == NULL){
+        PRINT_CAUSE_ON_REGS(xReturned);
+        END();
+    }
     /* Start the scheduler. */
     vTaskStartScheduler();
 
